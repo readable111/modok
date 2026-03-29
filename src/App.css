@@ -1,18 +1,54 @@
+--editor-bg: #1e1e1e
+
 .logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
+  filter: drop-shadow( 0 2em #747bff);
 }
 
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafb);
 }
+
 :root {
+  /* Backgrounds */
+  --editor-bg: #1E1E1E;
+  --sidebar-bg: #252526;
+  --activitybar-bg: #333333;
+  --input-bg: #3C3C3C;
+  --line-highlight: #2A2D2E;
+
+  /* Syntax */
+  --foreground: #D4D4D4;
+  --keyword: #569CD6;
+  --string: #CE9178;
+  --function: #DCDCAA;
+  --type: #4EC9B0;
+  --variable: #9CDCFE;
+  --number: #B5CEA8;
+  --comment: #6A9955;
+  --constant: #4FC1FF;
+
+  /* UI chrome */
+  --tab-active: #007ACC;
+  --tab-inactive: #2D2D2D;
+  --border: #454545;
+  --selection: #264F78;
+
+  /* Status & accents */
+  --statusbar: #007ACC;
+  --error: #F44747;
+  --warning: #CCA700;
+  --info: #75BEFF;
+  --added: #81B88B;
+  --modified: #E2C08D;
+  --deleted: #C74E39;
+
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
+  color: var(--foreground);
+  background-color: var(---editor-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -112,5 +148,19 @@ button {
   }
   button:active {
     background-color: #0f0f0f69;
+  }
+}
+
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  max-width: 10vw;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid #FFFFFF;
+
+  .file-entry {
+    padding: 4px 2px;
   }
 }
