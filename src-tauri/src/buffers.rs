@@ -1,6 +1,11 @@
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::fs;
+use std::path::PathBuf;
+use crate::file::File;
+
+use super::file;
+
 
 
 #[tauri::command]
@@ -13,16 +18,16 @@ pub fn open_and_read_buffer(file_path: &str) -> Result<Vec<u8>, String> {
 }
 
 #[tauri::command]
-pub fn open_directory(dir_path: String) -> Result<Vec<String>, String> {
+pub fn open_directory(dir_path: String) -> Result<Vec<File>, String> {
     let entries = fs::read_dir(&dir_path)
         .map_err(|e| e.to_string())?;
 
-    let names = entries
+    let files: Vec<File> = entries
         .filter_map(|e| {
             let e = e.ok()?;
-            Some(e.file_name().to_string_lossy().to_string())
+            Some(File::from_dir_entry(e))
         })
-        .collect();
-    Ok(names)
+    .collect();
+    Ok(files)
 }
 

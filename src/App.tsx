@@ -2,17 +2,11 @@ import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog'
+import { SideBuffer } from "./components/sideBuffer";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-  const [files, setFiles] = useState<string[]>([])
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [files, setFiles] = useState<[{}]>([{}])
 
   async function pickFolder() {
     const path = await open({
@@ -21,18 +15,17 @@ function App() {
     })
 
     if (path) {
-      const result = await invoke<string[]>('open_directory', { dirPath: path });
+      const result = await invoke<[{}]>('open_directory', { dirPath: path });
       setFiles(result)
+      console.log(result)
     }
   }
 
   return (
     <main>
+      <SideBuffer files={files}/>
       <div>
         <button onClick={pickFolder}>Open Folder</button>
-        {files.map(name =>(
-          <p>{name}</p>
-        ))}
       </div>
     </main>
   );
