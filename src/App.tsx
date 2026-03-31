@@ -18,10 +18,17 @@ function App() {
     })
 
     if (path) {
-      const result = await invoke<[{}]>('open_directory', { dirPath: path });
+      const result = await invoke<File[]>('open_directory', { dirPath: path });
       setFiles(result)
       console.log(result)
     }
+  }
+
+  async function readFile(e:React.MouseEvent<HTMLDivElement>, file:File) {
+    const contents = await invoke<String>("open_and_read_buffer", {file_path: file.path});
+    setFileContents(contents)
+    e.currentTarget.classList.add("active")
+    setOpenFile(file)
   }
 
   return (
@@ -37,6 +44,7 @@ function App() {
           <pre>{fileBuffer}</pre>
         </div>
       </div>
+      <div>{fileContents}</div>
     </main>
   );
 }
