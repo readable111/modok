@@ -2,33 +2,23 @@ import { ReactElement, useState } from "react";
 import React from "react"
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog'
+import { FileEntry } from "./fileEntry";
+import { File } from "../types/file.ts"
 import '../App.css'
 
-interface File {
-  name: string,
-  path: string,
-  is_dir: boolean,
-  extension: string
-}
-
-export const SideBuffer = (props : {files:File[]}) => {
-  const [openFile, setOpenFile] = useState<File>()
-  const [selectedElement,setSelectedElement] = useState<Element>()
-
-  async function select(event:React.MouseEvent , file:File){
-    const current = event.currentTarget;
-    if (selectedElement) {
-      selectedElement.classList.remove('selected');
-    }
-    // call some tauri function here to read the file for the first x lines
-    current.classList.add('selected');
-    setSelectedElement(current);
-  }
+export const SideBuffer = (props: { files: File[] }) => {
+  const [selectedElement, setSelectedElement] = useState<number>(-1)
 
   return (
     <div className="file-tree">
-      {props.files.map(file =>(
-        <div onClick={select} className="file-entry">{file.name}</div>
+      {props.files.map((file, index) => (
+        <FileEntry
+          key={index}
+          id={index}
+          selectedElement={selectedElement}
+          setSelectedElement={setSelectedElement}
+          file={file}
+        />
       ))}
     </div>
   )
