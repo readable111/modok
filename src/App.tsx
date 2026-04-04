@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog'
 import { SideBuffer } from "./components/sideBuffer";
+import { useAppStore } from "./store/useAppStore";
 import "./App.css";
 
 function App() {
+  const { fileBuffer, fetchBuffer } = useAppStore()
+
   const [files, setFiles] = useState<[{}]>([{}])
 
   async function pickFolder() {
@@ -27,6 +30,7 @@ function App() {
       <div>
         <button onClick={pickFolder}>Open Folder</button>
       </div>
+      <div>{fileBuffer}</div>
     </main>
   );
 }

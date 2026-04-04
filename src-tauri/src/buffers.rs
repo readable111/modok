@@ -1,20 +1,20 @@
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::fs;
+use std::string::FromUtf8Error;
 use std::path::PathBuf;
-use crate::file::File;
-
-use super::file;
+use super::file::File;
 
 
 
 #[tauri::command]
-pub fn open_and_read_buffer(file_path: &str) -> Result<Vec<u8>, String> {
+pub fn open_and_read_buffer(file_path: &str) -> Result<String, String> {
     let file = fs::File::open(file_path).map_err(|e| e.to_string())?;
     let mut reader = BufReader::new(file);
     let mut buffer: Vec<u8> = Vec::new();
     reader.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
-    Ok(buffer)
+    let s = String::from_utf8(buffer).map_err(|e| e.to_string())?;
+    Ok(s)
 }
 
 #[tauri::command]
