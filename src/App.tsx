@@ -30,7 +30,7 @@ function App() {
       <div>
         <button onClick={pickFolder}>Open Folder</button>
       </div>
-      <div>{fileBuffer}</div>
+      {fileBuffer.map((line) =>(<pre>{line}</pre>))}
     </main>
   );
 }
