@@ -26,11 +26,22 @@ function App() {
 
   return (
     <main>
-      <SideBuffer files={files}/>
-      <div>
-        <button onClick={pickFolder}>Open Folder</button>
+      <div className="content">
+        <div className="side-container">
+          <div>
+            <button onClick={pickFolder}>Open Folder</button>
+          </div>
+          <SideBuffer files={files}/>
+        </div>
+        <div className="file-contents">
+          {fileBuffer.map((line, ind) =>(
+            <div className="line">
+              <div className="line-number">{ind}</div>
+              <pre>{line}</pre>
+            </div>
+          ))}
+        </div>
       </div>
-      {fileBuffer.map((line) =>(<pre>{line}</pre>))}
     </main>
   );
 }
