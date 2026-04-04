@@ -1,7 +1,5 @@
 import { ReactElement, useState } from "react";
 import React from "react"
-import { invoke } from "@tauri-apps/api/core";
-import { open } from '@tauri-apps/plugin-dialog'
 import { FileEntry } from "./fileEntry";
 import { File } from "../types/file.ts"
 import '../App.css'

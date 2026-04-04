@@ -1,4 +1,6 @@
 import { Dispatch, SetStateAction } from "react"
+import { useAppStore } from "../store/useAppStore"
+import { File } from "../types/file.ts"
 
 interface FileEntryProps {
   id: number
@@ -9,12 +11,14 @@ interface FileEntryProps {
 }
 
 export const FileEntry = ({ id, selectedElement, setSelectedElement, onClick, file }: FileEntryProps) => {
+  const { fileBuffer, fetchBuffer } = useAppStore()
+
   const isSelected = selectedElement === id
   const style = isSelected ? "file-entry selected" : "file-entry"
 
-  function handleClick() {
+  async function handleClick() {
     setSelectedElement(id)
-    onClick?.()
+    await fetchBuffer(file.path)
   }
 
   return (
