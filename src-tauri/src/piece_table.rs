@@ -19,9 +19,29 @@ pub struct AddBuffer {
 }
 
 impl AddBuffer {
-    pub fn new() -> Self;
-    pub fn append(&mut self, text: &str) -> (usize, usize);
-    fn scan_line_starts(&mut self, from_offset: usize);
+    pub fn new() -> Self {
+        Self {
+            content: String::new(),
+            line_starts: Vec::new(),
+        }
+    }
+
+    // append text to the add buffer, and keep track of line starts
+    pub fn append(&mut self, text: &str) -> (usize, usize){
+        let start = self.content.len();
+        self.content.push_str(text);
+        self.scan_line_starts(start);
+        return ( start, text.len() )
+    }
+
+    // scan content from offset, appending new line character starts
+    fn scan_line_starts(&mut self, from_offset: usize){
+        for (i, c) in self.content[from_offset..].chars().enumerate() {
+            if c == '\n' || c == '\r' {
+                self.line_starts.push(i);
+            }
+        }
+    }
 }
 
 // ===== Piece =====
