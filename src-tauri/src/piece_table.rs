@@ -177,16 +177,53 @@ pub type NodePtr = Option<usize>;
 // Owns all nodes, handed out by index
 // Avoids the self-referential pointer problem in Rust trees
 
+// The arena is just a Vec of optional nodes.
+// None means the slot is free/reusable, Some means it's occupied.
 pub struct NodeArena {
-    nodes: Vec<Node>,
+    nodes: Vec<Option<Node>>,
+    free_list: Vec<usize>,  // indices of slots that have been freed and can be reused
 }
 
 impl NodeArena {
-    pub fn new() -> Self;
-    pub fn alloc(&mut self, node: Node) -> usize;
-    pub fn get(&self, idx: usize) -> &Node;
-    pub fn get_mut(&mut self, idx: usize) -> &mut Node;
-    pub fn free(&mut self, idx: usize);  // mark slot as reusable
+    // Initialize with an empty vec and empty free list
+    pub fn new() -> Self {
+        Self {
+            nodes: Vec::new(),
+            free_list: Vec::new(),
+        }
+    }
+
+    // If there are any free slots, reuse one instead of growing the vec.
+    // Otherwise push onto the end and return the new index.
+    // Either way, return the index so the caller can store it as a NodePtr.
+    pub fn alloc(&mut self, node: Node) -> usize {
+        if let Some(idx) = self.free_list.pop() {
+            self.nodes[idx] = Some(node);
+            idx
+        } else {
+            self.nodes.push(Some(node));
+            self.nodes.len() - 1
+        }
+    }
+
+    // Just index into the vec and unwrap — panics if the slot is free,
+    // which would indicate a bug (dangling NodePtr) in the tree logic.
+    pub fn get(&self, idx: usize) -> &Node {
+        self.nodes[idx].as_ref().expect("attempted to get a freed node")
+    }
+
+    pub fn get_mut(&mut self, idx: usize) -> &mut Node {
+        self.nodes[idx].as_mut().expect("attempted to get a freed node")
+    }
+
+    // Don't actually remove from the vec — just set the slot to None
+    // and push the index onto the free list so alloc can reuse it later.
+    // This keeps all other indices stable, which is important because
+    // NodePtrs stored in other nodes are just indices into this vec.
+    pub fn free(&mut self, idx: usize) {
+        self.nodes[idx] = None;
+        self.free_list.push(idx);
+    }
 }
 
 // ===== PieceTree =====
