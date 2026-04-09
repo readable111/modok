@@ -62,12 +62,92 @@ pub struct Piece {
 }
 
 impl Piece {
-    pub fn new(buffer_kind: BufferKind, start: usize, length: usize, line_starts: Vec<usize>) -> Self;
-    pub fn trim_start(&self, amount: usize) -> Self;
-    pub fn trim_end(&self, new_length: usize) -> Self;
-    pub fn split_at(&self, local_offset: usize) -> (Self, Self);
-    pub fn offset_to_line_col(&self, local_offset: usize) -> (usize, usize);
-    fn recompute_line_feed_count(&mut self);
+    pub fn new(buffer_kind: BufferKind, start: usize, length: usize, line_starts: Vec<usize>) -> Self{
+        Self {
+            buffer_kind: buffer_kind,
+            start: start,
+            length: length,
+            line_feed_count: line_starts.len(),
+            line_starts: line_starts,
+        }
+    }
+
+    pub fn trim_start(&self, amount: usize) -> Self {
+        let new_start = self.start + amount;
+        let new_length = self.length - amount;
+
+        let new_line_starts: Vec<usize> = self.line_starts
+            .iter()
+            .filter(|&&pos| pos >= amount)
+            .map(|&pos| pos - amount)
+            .collect();
+
+        Piece::new(
+            self.buffer_kind.clone(),
+            new_start,
+            new_length,
+            new_line_starts,
+        )
+    }
+
+    pub fn trim_end(&self, new_length: usize) -> Self {
+        let new_line_starts: Vec<usize> = self.line_starts
+            .iter()
+            .filter( |&&pos| pos < new_length)
+            .copied()
+            .collect();
+
+        Piece::new(
+            self.buffer_kind.clone(),
+            self.start,
+            new_length,
+            new_line_starts
+            )
+    }
+
+    pub fn split_at(&self, local_offset: usize) -> (Self, Self) {
+        let split_2_start = self.start + local_offset;
+        let split_1_length = local_offset;
+        let split_2_length = self.length - local_offset;
+        let split_1_line_starts: Vec<usize> = self.line_starts
+            .iter()
+            .filter(|&&pos| pos < local_offset)
+            .copied()
+            .collect();
+
+        let split_2_line_starts: Vec<usize> = self.line_starts
+            .iter()
+            .filter(|&&pos| pos >= local_offset)
+            .map(|&pos| pos - local_offset)
+            .collect();
+
+        (
+            Piece::new(
+                self.buffer_kind.clone(),
+                self.start,
+                split_1_length,
+                split_1_line_starts,
+                ),
+            Piece::new(
+                self.buffer_kind.clone(),
+                split_2_start,
+                split_2_length,
+                split_2_line_starts,
+                )
+            )
+    }
+
+    pub fn offset_to_line_col(&self, local_offset: usize) -> (usize, usize) {
+        let line = self.line_starts
+            .partition_point(|&pos| pos <= local_offset);
+
+        let col = match line {
+            0 => local_offset,
+            _ => local_offset - self.line_starts[line - 1],
+        };
+
+        (line, col)
+    }
 }
 
 // ===== Node =====
