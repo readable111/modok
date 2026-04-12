@@ -239,10 +239,93 @@ pub struct PieceTree {
 
 impl PieceTree {
     // read text into original buffer and return self
-    pub fn new(text: &str) -> Self;
+    pub fn new(text: &str) -> Self {
+        let mut arena = NodeArena::new();
+        let mut add_buffer = AddBuffer::new();
+
+        // scan the original buffer for newlines
+        let line_starts: Vec<usize> = text
+            .char_indices()
+            .filter(|(_, c)| *c == '\n')
+            .map(|(i, _)| i)
+            .collect();
+
+        let original_buffer = OriginalBuffer {
+            content: text.to_string(),
+            line_starts: line_starts.clone(),
+        };
+
+        // the root piece covers the entire original buffer
+        let piece = Piece::new(
+            BufferKind::Original,
+            0,
+            text.len(),
+            line_starts,
+        );
+
+        let total_lines = piece.line_feed_count + 1;
+        let total_length = piece.length;
+
+        let root_node = Node {
+            piece,
+            left_char_count: 0,
+            left_line_count: 0,
+            color: Color::Black,  // root is always black
+            left: None,
+            right: None,
+            parent: None,
+        };
+
+        let root = Some(arena.alloc(root_node));
+
+        Self {
+            arena,
+            root,
+            original_buffer,
+            add_buffer,
+            total_length,
+            total_lines,
+        }
+    }
 
     // insert text into add buffer, and insert a new node to the tree
-    pub fn insert(&mut self, offset: usize, text: &str);
+    pub fn insert(&mut self, offset: usize, text: &str){
+        let (start, len) = self.add_buffer.append(text);
+
+        let line_starts: Vec<usize> = text
+            .char_indices()
+            .filter(|(_, c)| *c == '\n')
+            .map(|(i, _)| i)
+            .collect();
+
+        let piece = Piece::new(
+            BufferKind::Add,
+            offset,
+            text.len(),
+            line_starts,
+        );
+
+        // walk the tree until the char count left is gt offset, but the
+        // char count left of the next node is less than offset.
+        // if offset is exactly at current_node.piece start.    
+        //      insert new node left of current node
+        //offeset lands exactly and the end of current_node.piece
+        //      insert new node right of current node
+        // offset lands in the middle of a piec
+        //      splie the existing piece at the lcal offset into left, right
+        //      replace the existing nodes piece wiht the left piece
+        //      insert a new node for the added text to the right of it
+        //      insert another new node for the right peice to the right of that
+        //
+        // update total_length and total_lines on the tree
+        //
+        // wal back up tree from the insertion point, updating left_char_count and left_line count
+        // on each ancestor node taht has the modified subtree on the left side
+        //
+        // rebalance the red_black tree via fix_insert which will perform rotations as needed. make
+        // sure rotate_left and rotate_right also update left char count and left line count on the
+        // affected nodes, since rotations change wich nodes ar in whose left subtrees
+    }
 
     // delete and rebalance tree
     pub fn delete(&mut self, start: usize, length: usize);
