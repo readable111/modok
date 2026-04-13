@@ -324,7 +324,72 @@ impl PieceTree {
         //
         // rebalance the red_black tree via fix_insert which will perform rotations as needed. make
         // sure rotate_left and rotate_right also update left char count and left line count on the
-        // affected nodes, since rotations change wich nodes ar in whose left subtrees
+        // affected nodes, since rotations change wich nodes ar in whose left subtrees'piece
+        let mut current_offset = 0;
+        let mut node_idx = self.root;
+
+        loop {
+            let node = self.arena.get(node_idx);
+            
+            // total chars to the left of this node in the document
+            let node_start = current_offset + node.left_char_count;
+            let node_end = node_start + node.piece.length;
+
+            if offset < node_start {
+                // target is somewhere in the left subtree
+                node_idx = node.left;
+
+            } else if offset >= node_end {
+                // target is somewhere in the right subtree
+                // shift current_offset forward by everything to the left of and
+                // including this node before descending right
+                current_offset = node_end;
+                node_idx = node.right;
+
+            } else {
+                // clone what we need before mutating the arena
+                let local_offset = offset - node_start;
+                let existing_piece = self.arena.get(node_idx).piece.clone();
+                let (left_piece, right_piece) = existing_piece.split_at(local_offset);
+
+                // replace the existing node's piece with the left half in place
+                // no need to alloc a new node for it
+                self.arena.get_mut(node_idx).piece = left_piece;
+
+                // alloc and insert the new text node
+                let new_node = Node {
+                    piece,
+                    left_char_count: 0,
+                    left_line_count: 0,
+                    color: Color::Red,
+                    left: None,
+                    right: None,
+                    parent: None,
+                };
+                let new_idx = self.arena.alloc(new_node);
+                self.insert_node(new_idx);
+
+                // alloc and insert the right half of the split
+                let right_node = Node {
+                    piece: right_piece,
+                    left_char_count: 0,
+                    left_line_count: 0,
+                    color: Color::Red,
+                    left: None,
+                    right: None,
+                    parent: None,
+                };
+                let right_idx = self.arena.alloc(right_node);
+                self.insert_node(right_idx);
+
+                // update metadata and totals
+                self.update_metadata(node_idx);
+                self.total_length += piece.length;
+                self.total_lines += piece.line_feed_count;
+                break;
+            }
+        }
+        
     }
 
     // delete and rebalance tree
@@ -356,9 +421,168 @@ impl PieceTree {
     fn find_node_at_line(&self, line: usize) -> Option<(usize, usize)>;      // (node_idx, local_line)
 
     // internal tree mutation
-    fn insert_node(&mut self, idx: usize);
-    fn remove_node(&mut self, idx: usize);
-    fn update_metadata(&mut self, idx: usize);  // walk up recomputing left_char/line_count
+    fn update_metadata(&mut self, idx: usize) {
+        // walk up the tree from idx, recomputing left_char_count and
+        // left_line_count on every ancestor where the modified node
+        // is in their left subtree. stop when we hit the root.
+        let mut current = Some(idx);
+
+        while let Some(curr_idx) = current {
+            let node = self.arena.get(curr_idx);
+            let parent_idx = node.parent;
+
+            if let Some(parent) = parent_idx {
+                let parent_node = self.arena.get(parent);
+
+                // only update if we are coming from the left child
+                if parent_node.left == Some(curr_idx) {
+                    let (char_count, line_count) = self.subtree_counts(curr_idx);
+                    let parent_node = self.arena.get_mut(parent);
+                    parent_node.left_char_count = char_count;
+                    parent_node.left_line_count = line_count;
+                }
+            }
+
+            current = parent_idx;
+        }
+    }
+
+    // helper — sum up total chars and lines in a subtree rooted at idx
+    fn subtree_counts(&self, idx: usize) -> (usize, usize) {
+        let node = self.arena.get(idx);
+        let char_count = node.left_char_count + node.piece.length;
+        let line_count = node.left_line_count + node.piece.line_feed_count;
+
+        // add right subtree counts if it exists
+        if let Some(right_idx) = node.right {
+            let right = self.arena.get(right_idx);
+            (
+                char_count + right.left_char_count + right.piece.length,
+                line_count + right.left_line_count + right.piece.line_feed_count,
+            )
+        } else {
+            (char_count, line_count)
+        }
+    }
+
+    fn insert_node(&mut self, idx: usize) {
+        // standard BST insert — find the right position by char offset,
+        // then hang the new node there and update metadata up the tree.
+        // fix_insert handles red-black rebalancing afterward.
+
+        let new_piece_length = self.arena.get(idx).piece.length;
+        let new_piece_lines = self.arena.get(idx).piece.line_feed_count;
+
+        if self.root.is_none() {
+            self.root = Some(idx);
+            self.arena.get_mut(idx).color = Color::Black;
+            return;
+        }
+
+        let mut current = self.root;
+        let mut current_offset = 0;
+
+        loop {
+            let curr_idx = current.unwrap();
+            let node = self.arena.get(curr_idx);
+            let node_start = current_offset + node.left_char_count;
+
+            if idx < curr_idx {
+                // go left
+                if node.left.is_none() {
+                    self.arena.get_mut(curr_idx).left = Some(idx);
+                    self.arena.get_mut(idx).parent = Some(curr_idx);
+
+                    // update this node's left metadata immediately
+                    self.arena.get_mut(curr_idx).left_char_count = new_piece_length;
+                    self.arena.get_mut(curr_idx).left_line_count = new_piece_lines;
+
+                    self.update_metadata(curr_idx);
+                    self.fix_insert(idx);
+                    return;
+                }
+                current = node.left;
+            } else {
+                // go right
+                if node.right.is_none() {
+                    self.arena.get_mut(curr_idx).right = Some(idx);
+                    self.arena.get_mut(idx).parent = Some(curr_idx);
+
+                    self.update_metadata(curr_idx);
+                    self.fix_insert(idx);
+                    return;
+                }
+                current_offset = node_start + node.piece.length;
+                current = node.right;
+            }
+        }
+    }
+
+    fn remove_node(&mut self, idx: usize) {
+        // standard BST removal — three cases based on how many children the node has.
+        // update metadata up the tree after structural change,
+        // then fix_delete handles red-black rebalancing.
+
+        let node = self.arena.get(idx);
+        let left = node.left;
+        let right = node.right;
+        let parent = node.parent;
+
+        match (left, right) {
+            // case 1 — leaf node, just detach it
+            (None, None) => {
+                if let Some(parent_idx) = parent {
+                    let parent_node = self.arena.get_mut(parent_idx);
+                    if parent_node.left == Some(idx) {
+                        parent_node.left = None;
+                    } else {
+                        parent_node.right = None;
+                    }
+                    self.update_metadata(parent_idx);
+                } else {
+                    self.root = None;
+                }
+            }
+
+            // case 2 — one child, replace node with its child
+            (Some(child), None) | (None, Some(child)) => {
+                if let Some(parent_idx) = parent {
+                    let parent_node = self.arena.get_mut(parent_idx);
+                    if parent_node.left == Some(idx) {
+                        parent_node.left = Some(child);
+                    } else {
+                        parent_node.right = Some(child);
+                    }
+                    self.arena.get_mut(child).parent = Some(parent_idx);
+                    self.update_metadata(parent_idx);
+                } else {
+                    self.root = Some(child);
+                    self.arena.get_mut(child).parent = None;
+                }
+            }
+
+            // case 3 — two children, replace with in-order successor
+            (Some(_), Some(right_idx)) => {
+                // find the leftmost node in the right subtree
+                let mut successor = right_idx;
+                while let Some(left_idx) = self.arena.get(successor).left {
+                    successor = left_idx;
+                }
+
+                // copy successor's piece into this node
+                let successor_piece = self.arena.get(successor).piece.clone();
+                self.arena.get_mut(idx).piece = successor_piece;
+
+                // now remove the successor (it has at most one child)
+                self.remove_node(successor);
+                self.update_metadata(idx);
+                return;
+            }
+        }
+
+        self.fix_delete(idx);
+        self.arena.free(idx);
+    }
 
     // red-black rebalancing
     fn rotate_left(&mut self, idx: usize);
