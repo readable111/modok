@@ -34,12 +34,7 @@ function App() {
           <SideBuffer files={files}/>
         </div>
         <div className="file-contents">
-          {fileBuffer.map((line, ind) =>(
-            <div className="line">
-              <div className="line-number">{ind}</div>
-              <pre>{line}</pre>
-            </div>
-          ))}
+          <pre>{fileBuffer}</pre>
         </div>
       </div>
     </main>
