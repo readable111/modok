@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod buffers;
 mod file;
+mod piece_table;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
