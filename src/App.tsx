@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
+import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog'
 import { SideBuffer } from "./components/sideBuffer";
 import { useAppStore } from "./store/useAppStore";
+import { File } from "./types/file";
 import "./App.css";
 
 function App() {
@@ -24,11 +24,9 @@ function App() {
     }
   }
 
-  async function readFile(e:React.MouseEvent<HTMLDivElement>, file:File) {
-    const contents = await invoke<String>("open_and_read_buffer", {file_path: file.path});
-    setFileContents(contents)
+  async function readFile(e: React.MouseEvent<HTMLDivElement>, file: File) {
+    await fetchBuffer(file.path)
     e.currentTarget.classList.add("active")
-    setOpenFile(file)
   }
 
   return (
@@ -44,7 +42,6 @@ function App() {
           <pre>{fileBuffer}</pre>
         </div>
       </div>
-      <div>{fileContents}</div>
     </main>
   );
 }

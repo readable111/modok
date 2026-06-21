@@ -1,20 +1,28 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use tauri::{Builder, Manager};
+use std::sync::Mutex;
 mod buffers;
 mod file;
 mod piece_table;
+use crate::piece_table::PieceTree;
+use std::path::PathBuf;
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+#[derive(Default)]
+struct AppState {
+    open_file: Option<PieceTree>,
+    open_directory: Option<PathBuf>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            app.manage(Mutex::new(AppState::default()));
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
             buffers::open_and_read_buffer,
             buffers::open_directory,
         ])
