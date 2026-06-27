@@ -300,7 +300,7 @@ impl PieceTree {
 
         let piece = Piece::new(
             BufferKind::Add,
-            offset,
+            start,
             text.len(),
             line_starts,
         );

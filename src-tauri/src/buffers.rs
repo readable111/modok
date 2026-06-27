@@ -38,3 +38,9 @@ pub fn open_directory(dir_path: String, state: tauri::State<'_, Mutex<AppState>>
     Ok(files)
 }
 
+#[tauri::command]
+pub fn get_offset_position(offset: usize, state: tauri::State<'_, Mutex<AppState>>) -> Result<Option<usize, usize>> {
+    let mut state = state.lock().unwrap();
+    state.cursor_position = state.open_file.offset_to_position(offset);
+    Ok(state.cursor_position)
+}
