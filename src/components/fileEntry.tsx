@@ -10,8 +10,8 @@ interface FileEntryProps {
   file: File
 }
 
-export const FileEntry = ({ id, selectedElement, setSelectedElement, onClick, file }: FileEntryProps) => {
-  const { fileBuffer, fetchBuffer } = useAppStore()
+export const FileEntry = ({ id, selectedElement, setSelectedElement, file }: FileEntryProps) => {
+  const { fetchBuffer } = useAppStore()
 
   const isSelected = selectedElement === id
   const style = isSelected ? "file-entry selected" : "file-entry"

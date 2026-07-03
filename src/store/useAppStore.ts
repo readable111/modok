@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { File } from "../types/file.ts"
+import { open } from '@tauri-apps/plugin-dialog'
 import { ReactNode } from "react";
 
 interface AppStore {
   fileBuffer: String,
+  files: File[],
   cursor: {
     offset: number,
     line: number,
@@ -12,9 +14,11 @@ interface AppStore {
   },
   fetchBuffer: (dir: String) => Promise<void>,
   moveCursor: (offset: number) => Promise<void>,
+  openFolder: () => Promise<void>,
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
+  files: [],
   fileBuffer: "",
   cursor: {
     offset: 0,
@@ -46,5 +50,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       console.error("Something went wrong", err)
     }
   },
+
+  openFolder: async () => {
+    const path = await open({
+      directory: true,
+      multiple: false,
+    })
+
+    if (path) {
+      const result = await invoke<File[]>('open_directory', { dirPath: path });
+      set({files: result})
+    }
+  }
 }))
 
