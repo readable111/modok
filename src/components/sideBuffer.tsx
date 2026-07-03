@@ -16,7 +16,7 @@ export const SideBuffer = (props: { files: File[] }) => {
           selectedElement={selectedElement}
           setSelectedElement={setSelectedElement}
           file={file}
-        />p
+        />
       ))}
     </div>
   )

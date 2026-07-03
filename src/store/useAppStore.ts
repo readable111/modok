@@ -21,22 +21,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     line: 0,
     col: 0
   },
-
-  fetchBuffer: async (dir) => {
-    try{
-      const files = await invoke<string>("open_and_read_buffer", {filePath: dir})
-      set({fileBuffer: files})
-    } catch (err) {
-      console.error("Something went wrong", err)
-    }
-  },
-
+  
   moveCursor: async (offset) => {
     try {
       const [line, col] = await invoke<Array<number>>("get_offset_position", { offset: offset })
       set(() => ({
         cursor: {
-          offset: offset,
+          offset,
           line: line,
           col: col,
         }
@@ -44,6 +35,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch (err) {
       console.error("Something went wrong", err)
     }
-  }
+  },
+
+  fetchBuffer: async (dir) => {
+    try{
+      const files = await invoke<string>("open_and_read_buffer", {filePath: dir})
+      set({fileBuffer: files})
+      get().moveCursor(0);
+    } catch (err) {
+      console.error("Something went wrong", err)
+    }
+  },
 }))
 

@@ -39,8 +39,17 @@ pub fn open_directory(dir_path: String, state: tauri::State<'_, Mutex<AppState>>
 }
 
 #[tauri::command]
-pub fn get_offset_position(offset: usize, state: tauri::State<'_, Mutex<AppState>>) -> Result<Option<usize, usize>> {
+pub fn get_offset_position(offset: usize, state: tauri::State<'_, Mutex<AppState>>) -> Result<Option<(usize, usize)>, String> {
     let mut state = state.lock().unwrap();
-    state.cursor_position = state.open_file.offset_to_position(offset);
+    
+    state.cursor_position = state.open_file.as_mut().unwrap().offset_to_position(offset);
     Ok(state.cursor_position)
 }
+
+#[tauri::command]
+pub fn write_changes(offset: usize, text: &str, state: tauri::State<'_, Mutex<AppState>>) {
+    let mut state = state.lock().unwrap();
+    state.open_file.as_mut().unwrap().insert(offset, text);
+    
+}
+

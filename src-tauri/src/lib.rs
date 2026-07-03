@@ -11,7 +11,7 @@ use std::path::PathBuf;
 struct AppState {
     open_file: Option<PieceTree>,
     open_directory: Option<PathBuf>,
-    cursor_position: Option<usize>,
+    cursor_position: Option<(usize, usize)>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -27,6 +27,7 @@ pub fn run() {
             buffers::open_and_read_buffer,
             buffers::open_directory,
             buffers::get_offset_position,
+            buffers::write_changes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
