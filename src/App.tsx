@@ -1,32 +1,21 @@
-import { useState } from "react";
+import { useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from '@tauri-apps/plugin-dialog'
 import { SideBuffer } from "./components/sideBuffer";
 import { useAppStore } from "./store/useAppStore";
-import { File } from "./types/file";
 import "./App.css";
 
 function App() {
-  const { fileBuffer, fetchBuffer } = useAppStore()
+  const { fileBuffer, cursor, moveCursor, openFolder } = useAppStore()
+  const textAreaRef = useRef(null)
 
-  const [files, setFiles] = useState<[{}]>([{}])
-
-  async function pickFolder() {
-    const path = await open({
-      directory: true,
-      multiple: false,
-    })
-
-    if (path) {
-      const result = await invoke<File[]>('open_directory', { dirPath: path });
-      setFiles(result)
-      console.log(result)
-    }
+  const handleMouseUp = (event:MouseEvent) => {
+    const cursorStart:number = textAreaRef.current.selectionStart;
+    moveCursor(cursorStart);
+    console.log(cursor);
   }
 
-  async function readFile(e: React.MouseEvent<HTMLDivElement>, file: File) {
-    await fetchBuffer(file.path)
-    e.currentTarget.classList.add("active")
+  const handleChange = async () => {
+      await invoke("write_changes", )
   }
 
   return (
@@ -34,12 +23,17 @@ function App() {
       <div className="content">
         <div className="side-container">
           <div>
-            <button onClick={pickFolder}>Open Folder</button>
+            <button onClick={openFolder}>Open Folder</button>
           </div>
-          <SideBuffer files={files}/>
+          <SideBuffer/>
         </div>
         <div className="file-contents">
-          <pre>{fileBuffer}</pre>
+          <textarea
+            ref={textAreaRef}
+            onMouseUp={(e) => {handleMouseUp(e)}}
+            value={fileBuffer}
+            className="code-area"></textarea>
+          <div>Line: {cursor.line}, Column: {cursor.col}</div>
         </div>
       </div>
     </main>
